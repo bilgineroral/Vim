@@ -1,4 +1,11 @@
 <div align="center">
+<h1>Vision Mamba Decoder</h1>
+Vision mamba + CNN Decoder for reconstruction based on:
+<a href="https://www.mdpi.com/2226-4310/11/10/791">Wind Field Reconstruction Method Using Incomplete Wind Data Based on Vision Mamba Decoder Network</a>
+
+(not an official implementation)
+...
+
 <h1>Vision Mamba </h1>
 <h3>Efficient Visual Representation Learning with Bidirectional State Space Model</h3>
 

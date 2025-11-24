@@ -21,7 +21,7 @@ from mamba_ssm.modules.mamba_simple import Mamba
 from mamba_ssm.utils.generation import GenerationMixin
 from mamba_ssm.utils.hf import load_config_hf, load_state_dict_hf
 
-from rope import *
+from .rope import *
 import random
 
 try:
@@ -60,7 +60,7 @@ class PatchEmbed(nn.Module):
         if self.flatten:
             x = x.flatten(2).transpose(1, 2)  # BCHW -> BNC
         x = self.norm(x)
-        return x
+        return x # (B, N, embed_dim)
     
 
 class Block(nn.Module):
@@ -286,7 +286,7 @@ class VisionMamba(nn.Module):
         self.patch_embed = PatchEmbed(
             img_size=img_size, patch_size=patch_size, stride=stride, in_chans=channels, embed_dim=embed_dim)
         num_patches = self.patch_embed.num_patches
-
+        self.feat_gran = img_size // patch_size
         if if_cls_token:
             if use_double_cls_token:
                 self.cls_token_head = nn.Parameter(torch.zeros(1, 1, self.embed_dim))
