@@ -63,6 +63,11 @@ Recently the state space models (SSMs) with efficient hardware-aware designs, i.
 - Requirements: vim_requirements.txt
   - `pip install -r vim/vim_requirements.txt`
 
+- **Ubuntu 22.04:**
+  - `wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_520.61.05_linux.run`
+  - `sudo sh cuda_11.8.0_520.61.05_linux.run`
+  - `export PATH=/usr/local/cuda-11.8/bin:$PATH`
+
 - Install ``causal_conv1d`` and ``mamba``
   - `python -m pip install --no-build-isolation -e causal-conv1d`
   - `python -m pip install --no-build-isolation -e mamba-1p1p1`
