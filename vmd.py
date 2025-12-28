@@ -325,3 +325,19 @@ class LitVMD(pl.LightningModule):
                 "name": "warmup+cosine",
             },
         }
+
+if __name__ == "__main__":
+    # simple test
+    model = LitVMD(img_size=512, patch_size=16)
+    
+    # number of params
+    num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Number of trainable parameters: {num_params/1e6:.2f} M")
+
+    # number of encoder params
+    num_enc_params = sum(p.numel() for p in model.model.encoder.parameters() if p.requires_grad)
+    print(f"Number of encoder trainable parameters: {num_enc_params/1e6:.2f} M")
+
+    # number of decoder params
+    num_dec_params = sum(p.numel() for p in model.model.decoder.parameters() if p.requires_grad)
+    print(f"Number of decoder trainable parameters: {num_dec_params/1e6:.2f} M")
