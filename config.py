@@ -1,12 +1,12 @@
-r = "grf/run1"
+r = "hrrr/run1"
 ckpt_dir = f"checkpoints/{r}"
 config = {
-    "batch_size": 8,
+    "batch_size": 32,
     "warmup_epochs": 5,
     "max_epochs": 1000,
 
     "grad_clip": 1.0,
-    "grad_accum_steps": 4,
+    "grad_accum_steps": 1,
     "lr": 2e-4,
     "weight_decay": 0.0,
 
@@ -19,8 +19,8 @@ config = {
     "k": (1, 1), # spanning mask block size
 
     "compile": False,
-    "matmul_precision": False,
-    "amp_dtype": "fp16",
+    "matmul_precision": True,
+    "amp_dtype": "bf16",
 
     "output_dir": ckpt_dir,
     "save_top_k": 3,
@@ -29,7 +29,7 @@ config = {
     "val_every": 10, # epochs
     "save_last": True,
 
-    "wandb": True,
+    "wandb": False,
     "wandb_run_name": r,
     "wandb_project": "vmdecoder",
 }
