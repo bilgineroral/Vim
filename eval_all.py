@@ -10,7 +10,7 @@ import time
 from dataset import VFEvalModule, VectorFieldDataset, load_data
 
 
-SEEDS_DEFAULT = [42, 812, 67, 2026, 1032, 5555, 1234, 10, 7, 102]
+SEEDS_DEFAULT = [2026, 7000, 12345, 54321, 99999]
 
 
 def load_model(ckpt_path):
@@ -83,6 +83,7 @@ def eval_once(
         vrh=vr,
         alpha=0.0,
         gamma=0.0,
+        base_seed=seed,
     )
     datamodule = VFEvalModule(eval_set, seed=seed, loader_kwargs=loader_kwargs)
 
