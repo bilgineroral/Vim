@@ -1,4 +1,4 @@
-r = "hrrr/run1"
+r = "hrrr/run2"
 ckpt_dir = f"checkpoints/{r}"
 config = {
     "batch_size": 32,
@@ -12,7 +12,7 @@ config = {
 
     "num_workers": 4,
     "prefetch_factor": 2,
-    "seed": 42,
+    "seed": 812,
     
     "vrl": 4, # min. number of visible regions
     "vrh": 16, # max. number of visible regions
@@ -25,11 +25,11 @@ config = {
     "output_dir": ckpt_dir,
     "save_top_k": 3,
     "log_every": 1, # epochs
-    "ckpt_every": 10, # epochs
-    "val_every": 10, # epochs
+    "ckpt_every": 20, # epochs
+    "val_every": 20, # epochs
     "save_last": True,
 
-    "wandb": False,
+    "wandb": True,
     "wandb_run_name": r,
     "wandb_project": "vmdecoder",
 }

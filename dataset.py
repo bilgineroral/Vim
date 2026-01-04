@@ -9,6 +9,7 @@ def random_spanning_mask(
     grid_shape: Tuple[int, int],
     n: int,
     k: Tuple[int, int] = (1, 1),
+    seed: int = None,
 ) -> np.ndarray:
     """
     Random visible patches; True=masked, False=visible.
@@ -40,7 +41,11 @@ def random_spanning_mask(
         return np.zeros((Hp, Wp), dtype=bool)
 
     # Choose n unique visible positions using NumPy
-    idx = np.random.choice(total, size=n, replace=False)
+    if seed is not None:
+        rng = np.random.default_rng(seed)
+        idx = rng.choice(total, size=n, replace=False)
+    else:
+        idx = np.random.choice(total, size=n, replace=False)
 
     visible_flat = np.zeros(total, dtype=bool)
     visible_flat[idx] = True
@@ -95,7 +100,8 @@ class VectorFieldDataset(Dataset):
                  stats_path: str,
                  mask_shape: Tuple[int, int] = (16, 16),
                  vrl: int = 4, vrh: int = 16, 
-                 alpha=2.0, gamma=0.10, k=(1,1)):
+                 alpha=0.0, gamma=0.0, k=(1,1),
+                 base_seed: int = None):
         if not ((torch.is_tensor(X) or isinstance(X, np.ndarray)) and X.ndim == 4):
             raise ValueError(f"Expected 4D tensor or numpy array (N,C,H,W), got {getattr(X,'shape',None)}")
         self.X = X
@@ -112,21 +118,29 @@ class VectorFieldDataset(Dataset):
         mid = (self.vrl + self.vrh) / 2.0
         weights = (self.vrh - self.vr + 1).float().pow(alpha) * torch.exp(gamma * (self.vr - mid))
         self.probs = weights / weights.sum()
+        self.base_seed = base_seed
 
     def __len__(self):
         return self.N
 
     def __getitem__(self, i: int):
+        if self.base_seed is not None:
+            g = torch.Generator()
+            g.manual_seed(self.base_seed + i)
+        else:
+            g = None
+        idx = torch.multinomial(self.probs, num_samples=1, generator=g).item()
+
         x = self.X[i] # (C, H, W)
         x = torch.from_numpy(x.copy()).to(torch.float32)
         x.sub_(self.mean).div_(self.std + 1e-6)
-               
-        idx = torch.multinomial(self.probs, num_samples=1).item()
+        
         v = self.vr[idx].item()
         coarse_mask = random_spanning_mask(
             grid_shape=self.mask_shape,
             n=v,
-            k=self.k
+            k=self.k,
+            seed=(self.base_seed + i) if self.base_seed is not None else None,
         ) # bool, True=masked, False=visible
         coarse_mask = torch.from_numpy(coarse_mask)
         ups = x.shape[1] // coarse_mask.shape[0]
