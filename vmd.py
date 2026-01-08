@@ -132,7 +132,8 @@ class Decoder(nn.Module):
         return W_hat
 
 class VisionMambaDecoder(nn.Module):
-    def __init__(self, img_size=512, patch_size=16):
+    def __init__(self, img_size=512, patch_size=16,
+                 drop_rate=0.0, drop_path_rate=0.0):
         super().__init__()
         self.encoder = VisionMamba(
             img_size=img_size,
@@ -147,7 +148,8 @@ class VisionMambaDecoder(nn.Module):
             if_cls_token=False,
             use_middle_cls_token=False,
             final_pool_type='all',
-            drop_path_rate=0,
+            drop_path_rate=drop_path_rate,
+            drop_rate=drop_rate
         )
         self.proj = nn.Linear(self.encoder.embed_dim, 2*self.encoder.embed_dim)
         self.decoder = Decoder(in_channels=self.proj.out_features, out_channels=2)
@@ -160,9 +162,11 @@ class VisionMambaDecoder(nn.Module):
         return W_hat
 
 class LitVMD(pl.LightningModule):
-    def __init__(self, img_size=512, patch_size=16, lr=1e-4, warmup_epochs=5, weight_decay=0.0):
+    def __init__(self, img_size=512, patch_size=16, lr=2e-4, warmup_epochs=5, weight_decay=0.0,
+                 drop_rate=0.0, drop_path_rate=0.0):
         super().__init__()
-        self.model = VisionMambaDecoder(img_size=img_size, patch_size=patch_size)
+        self.model = VisionMambaDecoder(img_size=img_size, patch_size=patch_size,
+                                       drop_rate=drop_rate, drop_path_rate=drop_path_rate)
         self.save_hyperparameters()
         self.criterion = F.l1_loss
 
@@ -262,6 +266,12 @@ class LitVMD(pl.LightningModule):
             sync_dist=True,
             prog_bar=False,
         )
+
+    def on_train_epoch_start(self):
+        self.trainer.datamodule.train_ds.set_epoch(self.current_epoch)
+
+    def on_validation_epoch_start(self):
+        self.trainer.datamodule.val_ds.set_epoch(self.current_epoch)
 
     def configure_optimizers(self):
         decay, no_decay = [], []

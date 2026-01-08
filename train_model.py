@@ -6,7 +6,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.utilities import rank_zero_only
 
 from vmd import LitVMD
-from dataset import VectorFieldDataset, VFDataModule, load_data
+from dataset import VectorFieldDataset, VFDataModule
 
 from config import config as cfg
 
@@ -22,51 +22,45 @@ def main():
     p.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume from")
     args = p.parse_args()
 
-    pl.seed_everything(cfg["seed"], workers=False)
+    pl.seed_everything(cfg["seed"], workers=True)
 
-    if cfg["matmul_precision"]:
-        torch.set_float32_matmul_precision('high')
+    torch.set_float32_matmul_precision(cfg["matmul_precision"])
 
     rank_zero_print("\nTraining configuration:")
     for key, value in cfg.items():
         rank_zero_print(f"  {key}: {value}")
     rank_zero_print("")
 
-    X_train = load_data(args.train_data)
-    X_val = load_data(args.val_data)
-
-    train_dataset = VectorFieldDataset(X_train, args.stats, mask_shape=(16, 16), 
-                                       vrl=cfg["vrl"], vrh=cfg["vrh"],
-                                       alpha=0.0, gamma=0.0,
-                                       k=cfg["k"])
-    val_dataset = VectorFieldDataset(X_val, args.stats, mask_shape=(16, 16), 
-                                     vrl=cfg["vrl"], vrh=cfg["vrh"],
-                                     alpha=0.0, gamma=0.0,
-                                     k=cfg["k"])
-    loader_kwargs = {
-        "batch_size": cfg["batch_size"],
-        "num_workers": cfg["num_workers"],
-        "pin_memory": torch.cuda.is_available(),
-        "persistent_workers": cfg["num_workers"] > 0,
+    augmentations = {
+        "rot_prob": cfg["rot_prob"],
+        "noise_prob": cfg["noise_prob"],
+        "blur_prob": cfg["blur_prob"],
+        "bg_prob": cfg["bg_prob"],
     }
-    if cfg["num_workers"] > 0:
-        loader_kwargs["prefetch_factor"] = cfg["prefetch_factor"]
 
+    train_dataset = VectorFieldDataset(args.train_data, args.stats, 
+                                       vrl=cfg["vrl"], vrh=cfg["vrh"],
+                                       base_seed=cfg["seed"],
+                                       aug=augmentations)
+    val_dataset = VectorFieldDataset(args.val_data, args.stats,
+                                     vrl=cfg["vrl"], vrh=cfg["vrh"],
+                                     base_seed=(cfg["seed"] + 10_000_000_000),
+                                     aug=None)
     dm = VFDataModule(
         train_ds=train_dataset,
         val_ds=val_dataset,
         seed=cfg["seed"],
-        loader_kwargs=loader_kwargs
+        batch_size=cfg["batch_size"],
+        num_workers=cfg["num_workers"],
     )
     
     model = LitVMD(
         img_size=512, patch_size=16, lr=cfg["lr"],
         warmup_epochs=cfg["warmup_epochs"],
-        weight_decay=cfg["weight_decay"]
+        weight_decay=cfg["weight_decay"],
+        drop_rate=cfg["drop_rate"],
+        drop_path_rate=cfg["drop_path_rate"],
     )
-
-    if cfg["compile"]:
-        model.model = torch.compile(model.model)
 
     if cfg["wandb"]:
         logger = WandbLogger(
@@ -101,6 +95,7 @@ def main():
         logger=logger,
         callbacks=[checkpoint_callback],
         accumulate_grad_batches=cfg["grad_accum_steps"],
+        use_distributed_sampler=False,
         enable_progress_bar=(not cfg["wandb"]),
     )
 

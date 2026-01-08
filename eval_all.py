@@ -7,7 +7,7 @@ import pytorch_lightning as pl
 import torch
 import time
 
-from dataset import VFEvalModule, VectorFieldDataset, load_data
+from dataset import VFEvalModule, VectorFieldDataset
 
 
 SEEDS_DEFAULT = [2026, 7000, 12345, 54321, 99999]
@@ -59,36 +59,24 @@ def eval_once(
     batch_size: int,
     seed: int,
     num_workers: int,
-    devices: int,
 ):
     pl.seed_everything(seed, workers=False)
 
     model = load_model(model_ckpt)
     model.eval()
 
-    X = load_data(eval_data)
-
-    loader_kwargs = {
-        "batch_size": batch_size,
-        "num_workers": num_workers,
-        "pin_memory": True,
-        "persistent_workers": (num_workers > 0),
-    }
-
     eval_set = VectorFieldDataset(
-        X,
-        stats,
-        mask_shape=(16, 16),
+        dataset_path=eval_data,
+        stats_path=stats,
         vrl=vr,
         vrh=vr,
-        alpha=0.0,
-        gamma=0.0,
         base_seed=seed,
+        aug=None,
     )
-    datamodule = VFEvalModule(eval_set, seed=seed, loader_kwargs=loader_kwargs)
+    datamodule = VFEvalModule(eval_set, seed=seed, batch_size=batch_size, num_workers=num_workers)
 
     trainer = pl.Trainer(
-        devices=devices,
+        devices=1,
         num_nodes=1,
         logger=False,
         enable_checkpointing=False,
@@ -115,7 +103,6 @@ def sweep(
     seeds: list[int],
     batch_size: int,
     num_workers: int,
-    devices: int,
 ):
     run_rows = []
 
@@ -139,7 +126,6 @@ def sweep(
                 batch_size=batch_size,
                 seed=seed,
                 num_workers=num_workers,
-                devices=devices,
             )
             run_rows.append({"vr": vr, "seed": seed, **metrics})
 
@@ -201,7 +187,6 @@ def parse_args():
 
     p.add_argument("--batch-size", type=int, default=8)
     p.add_argument("--num-workers", type=int, default=4)
-    p.add_argument("--devices", type=int, default=1)
 
     p.add_argument("--out", type=str, required=True, help="Excel output path (.xlsx)")
     return p.parse_args()
@@ -219,7 +204,6 @@ if __name__ == "__main__":
         seeds=args.seeds,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
-        devices=args.devices,
     )
 
     write_excel(df_runs, df_summary, args.out)
