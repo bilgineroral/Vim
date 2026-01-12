@@ -1,29 +1,29 @@
-r = "final/hrrr/run1"
+r = "final/grf/run2-312"
 ckpt_dir = f"checkpoints/{r}"
 config = {
-    "batch_size": 16,
+    "batch_size": 32,
     "warmup_epochs": 5,
     "max_epochs": 1000,
 
     "grad_clip": 1.0,
-    "grad_accum_steps": 2,
+    "grad_accum_steps": 1,
     "lr": 2e-4,
     "weight_decay": 0.01,
-    "drop_rate": 0.1,
-    "drop_path_rate": 0.1,
+    "drop_rate": 0.0,
+    "drop_path_rate": 0.0,
 
     "num_workers": 4,
     "prefetch_factor": 2,
-    "seed": 42,
+    "seed": 312,
     
     "vrl": 4, # min. number of visible regions
     "vrh": 16, # max. number of visible regions
     "k": (1, 1), # spanning mask block size
 
-    "rot_prob": 0.3,
-    "noise_prob": 0.2,
-    "blur_prob": 0.2,
-    "bg_prob": 0.3,
+    "rot_prob": 0.0,
+    "noise_prob": 0.0,
+    "blur_prob": 0.0,
+    "bg_prob": 0.0,
 
     "matmul_precision": "highest",
     "amp_dtype": "fp16",
@@ -31,8 +31,8 @@ config = {
     "output_dir": ckpt_dir,
     "save_top_k": 3,
     "log_every": 1, # epochs
-    "ckpt_every": 20, # epochs
-    "val_every": 20, # epochs
+    "ckpt_every": 10, # epochs
+    "val_every": 10, # epochs
     "save_last": True,
 
     "wandb": True,

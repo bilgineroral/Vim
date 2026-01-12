@@ -15,10 +15,10 @@ def random_spanning_mask(
     Random visible patches; True=masked, False=visible.
 
     Key property:
-      mask1 is a deterministic function of (seed, grid_shape, n1)
+      mask is a deterministic function of (seed, grid_shape, n)
     """
     if n < 0:
-        raise ValueError("n1 must be non-negative")
+        raise ValueError("n must be non-negative")
 
     Hp, Wp = grid_shape
     total = Hp * Wp
