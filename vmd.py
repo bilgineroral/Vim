@@ -96,12 +96,12 @@ class Decoder(nn.Module):
         layer_info = [
             # (in_ch, out_ch), stride, kernel
             ((in_channels, 512), 1, 3),
+            ((512, 512), 2, 4),
+            ((512, 512), 2, 4),
             ((512, 256), 2, 4),
-            ((256, 128), 2, 4),
-            ((128, 128), 2, 4),
-            ((128, 64),  2, 4),
-            ((64, 64),   1, 3),
-            ((64, out_channels), 1, 3)
+            # ((128, 64),  2, 4),
+            # ((64, 64),   1, 3),
+            ((256, out_channels), 1, 3)
         ]
         blocks = []
         for i, ((in_ch, out_ch), stride, kernel_size) in enumerate(layer_info):
@@ -119,7 +119,7 @@ class Decoder(nn.Module):
             # GroupNorm + ReLU for intermediate blocks only
             if not is_last:
                 layers += [nn.GroupNorm(num_groups=32, num_channels=out_ch),
-                           nn.ReLU(inplace=True)]
+                           nn.ReLU()]
 
             blocks.append(nn.Sequential(*layers))
 
@@ -132,15 +132,15 @@ class Decoder(nn.Module):
         return W_hat
 
 class VisionMambaDecoder(nn.Module):
-    def __init__(self, img_size=512, patch_size=16,
+    def __init__(self, img_size=128, patch_size=8,
                  drop_rate=0.0, drop_path_rate=0.0):
         super().__init__()
         self.encoder = VisionMamba(
             img_size=img_size,
             patch_size=patch_size,
             stride=patch_size,
-            depth=24,
-            embed_dim=256,
+            depth=12,
+            embed_dim=512,
             d_state=16,
             channels=2,
             num_classes=0,
@@ -338,7 +338,7 @@ class LitVMD(pl.LightningModule):
 
 if __name__ == "__main__":
     # simple test
-    model = LitVMD(img_size=512, patch_size=16)
+    model = LitVMD(img_size=128, patch_size=8).cuda()
     
     # number of params
     num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -351,3 +351,8 @@ if __name__ == "__main__":
     # number of decoder params
     num_dec_params = sum(p.numel() for p in model.model.decoder.parameters() if p.requires_grad)
     print(f"Number of decoder trainable parameters: {num_dec_params/1e6:.2f} M")
+
+    x = torch.randn(2, 2, 128, 128).cuda()
+    with torch.no_grad():
+        W_hat = model(x)
+    print("Output shape:", W_hat.shape)
